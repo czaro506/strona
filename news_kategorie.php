@@ -1,4 +1,3 @@
-
 <?php
 $akcja = '';
 if(isset($_GET["akcja"])){
@@ -26,41 +25,73 @@ if($akcja=="nowy"){
 } elseif($akcja=="dodaj"){
 	//zapis nowego rekordu do tabeli
 	$rok = date("Y");
-	$lokalizacja = "./zasoby/".$rok."/news_kategorie/news_kategoria.jpg";
+	$sql = "SELECT `katnews_id` FROM `kategorie_news` ORDER BY `katnews_id`  DESC LIMIT 1";
+	$query = mysqli_query($link, $sql);
+	$dane = mysqli_fetch_array($query);
+	$id = $dane['katnews_id'] + 1;
+	$lokalizacja = "./zasoby/".$rok."/news_kategorie/news_kategoria".$id.".jpg";
 	if ($_FILES['obraz']['type'] != 'image/jpeg'){
 		echo'To nie jest obraz .jpg';
 	} else{
 		if(is_uploaded_file($_FILES['obraz']['tmp_name'])){
 			move_uploaded_file($_FILES['obraz']['tmp_name'],$lokalizacja);
-		$sql = "INSERT INTO kategorie_news(katnews_id, katnews_nazwa, katnews_kolejnosc, katnews_obraz) 
+		$sql = "INSERT INTO `kategorie_news`(`katnews_id`, `katnews_nazwa`, `katnews_kolejnosc`, `katnews_obraz`) 
 		VALUES (0,'".$_POST['nazwa']."','".$_POST['kolejnosc']."','".$lokalizacja."')";
 		$query = mysqli_query($link,$sql);
 		if(!$query){
-		echo "Wystąpił błąd przy dodawaniu kategorii".$_POST["nazwa"];
-} else 
-	echo "Dodano kategorię ".$_POST["nazwa"];
+			echo "Wystąpił błąd przy dodawaniu kategorii";
+		} else {
+			echo "Dodano nową kategorię";
 		}
-	
+		}
 	}
 	
 	
 } elseif($akcja=="edycja"){
 	//formularz z danymi do edycji
+	$sql = "SELECT * FROM `kategorie_news` WHERE `katnews_id`=".$_GET['id'];
+	$query = mysqli_query($link,$sql);
+	$rekord = mysqli_fetch_array($query);
+	
+	echo'
+		<form enctype="multipart/form-data" action="index.php?akcja=edytuj&id='.$_GET['id'].'" method="post">
+		<label>Nazwa kategorii newsów:
+		<input name="nazwa" type="text" size="30" value="'.$rekord['katnews_nazwa'].'">
+		</label><br>
+		<label>Kolejność:
+		<input name="kolejnosc" type="text" size="3" value="'.$_GET['id'].'">
+		</label><br>
+		<label>Obraz kategorii:
+		<img src="'.$rekord['katnews_obraz'].'">
+		</label><br>
+		<input name="obraz" type="file"><br><br>
+		<input type="submit" value="Zapisz zmiany">
+		
+		</form>
+		';
 	
 } elseif($akcja=="edytuj"){
 	//aktualizacja rekordu w tabeli
-	
+	$sql = 'UPDATE `kategorie_news` SET 
+	`katnews_nazwa`="'.$_POST['nazwa'].'",
+	`katnews_kolejnosc`="'.$_POST['kolejnosc'].'"
+	WHERE `katnews_id`='.$_GET['id'];
+		$query = mysqli_query($link, $sql);
+	if(!$query){
+		echo "Wystąpił błąd przy zmianie kategorii".$_GET["id"];
+	} else {
+		echo "Zmieniono kategorię ".$_GET["id"];
+	}
 } elseif($akcja=="usuń"){
 	//skasowanie rekordu tabeli
-	$sql="DELETE FROM `kategorie_news`
-			WHERE `katnews_id`=".$_GET["id"];
+	$sql="DELETE FROM `kategorie_news` WHERE `katnews_id`=".$_GET["id"];
 	$query = mysqli_query($link, $sql);
 	if(!$query){
-		echo "Wystąpił błąd przy usuwaniu kategorii"._GET["id"];
-} else 
-	echo "Usunięto kategorię ".$_GET["id"];
-	
-} else{
+		echo "Wystąpił błąd przy usuwaniu kategorii".$_GET["id"];
+	} else {
+		echo "Usunięto kategorię".$_GET["id"];
+	}
+} else {
 	//wyświetlenie listy kategorii
 	echo'
 		<table align="center" border="1">
@@ -70,7 +101,7 @@ if($akcja=="nowy"){
 		<td align="center">Obraz</td>
 		<td align="center">Akcja</td>
 		</tr>';
-	$sql = "SELECT * FROM kategorie_news WHERE 1 ORDER BY katnews_kolejnosc ASC";
+	$sql = "SELECT * FROM `kategorie_news` WHERE 1 ORDER BY `katnews_kolejnosc` ASC";
 	$rekordy = mysqli_query($link,$sql);
 	while($rekord = mysqli_fetch_array($rekordy)){
 		echo'
